@@ -8,6 +8,7 @@
 * Aus welchen Subnetzen stammen die Angreifer?
 * Netzwerk-Diagramm von Subnetzen und IPs
 * Weltkarte mit Angreifern
+* Wann wirst du angegriffen?
 
 ### Beispiele:
-![Image of Yaktocat](https://octodex.github.com/images/yaktocat.png)
+![Image of TopTen](https://github.com/biejay/SSH-Tarpit-R-Analyse/main/R/topten.jpg)
