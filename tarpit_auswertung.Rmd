@@ -1,0 +1,447 @@
+---
+title: "Tarpit Auswertung - made by BieJay"
+author: "BieJay"
+output:
+  html_document:
+    df_print: paged
+    code_folding: hide
+    toc: true
+    toc_depth: 4
+    fig_width: 16 #=1200px
+    fig_height: 10.6666 #=800px
+  pdf_document: default
+---
+
+
+<style>
+.html-widget {
+    margin: auto;
+}
+</style>
+
+
+```{r setup, include=FALSE}
+#download.file("http://thematicmapping.org/downloads/TM_WORLD_BORDERS_SIMPL-0.3.zip" , destfile="world_shape_file.zip")
+#unzip("world_shape_file.zip")
+knitr::opts_chunk$set(echo = TRUE)
+
+sizef=1 #1=16 width x 10.666 height fig
+
+library(ggplot2)
+library("tidyverse")
+library(kableExtra)
+library(tidyr)
+library("reshape2")
+library(networkD3)
+library(dplyr)
+library(RColorBrewer)
+library(ggrepel)
+library(lubridate)
+library(igraph)
+library("rgeolocate")
+library("ggpmisc")
+library(maps)
+library(rgdal)
+library(maptools)
+if (!require(gpclib)) install.packages("gpclib", type="source")
+gpclibPermit()
+library(broom)
+library(leaflet)
+
+
+df=read.csv2("tarpit.csv")
+df=df[!grepl("192.168.0.",df$ip),]
+#df=read.csv("tarpit_semper.csv")
+
+
+df$X=NULL
+df$datetime=as.POSIXct(df$datetime)
+
+
+zeitraum=paste(format(as.Date(min(df$datetime),format = "%Y-%m-%d"),"%d.%m.%Y")
+,"-",format(as.Date(max(df$datetime),format = "%Y-%m-%d"),"%d.%m.%Y")
+)
+
+days_difference=as.numeric(max(df$datetime)-min(df$datetime), units="days")
+
+datenquelle=paste("Datenquelle: SSH-Tarpit,",zeitraum)
+
+
+ips=as.data.frame(table(df$ip))
+ips=ips[order(-ips$Freq),]
+ips$anteil=round(ips$Freq/nrow(df%>%filter(status=="connected"))*100,1)
+
+rownames(ips)=NULL
+
+colnames(ips)=c("IP","Angriffe","Anteil (%)")
+
+ips_top100=ips[c(1:100),]
+temp=ip_api(ips_top100$IP)
+ips_top100$org=temp$organisation
+ips_top100$city=temp$city_name
+ips_top100$region=temp$region_name
+ips_top100$country=temp$country_name
+colnames(ips_top100)=c("IP","Angriffe","Anteil (%)","Organisation","Stadt","Region","Land")
+ips_top10=ips_top100[c(1:10),]
+
+
+differenz=0
+anzahl=0
+klebezeiten=data.frame(ip=0,klebezeit=0,anzahl=0)
+t=1
+start_time <- Sys.time()
+rows=0
+for (cur_ip in unique(df$ip)){
+  temp=filter(df,ip==cur_ip)
+  print(paste0(round(rows/nrow(df)*100,2),"%[",nrow(temp),"]"))
+  rows=rows+nrow(temp)
+  t=t+1
+  tt=data.frame(ip=cur_ip,klebezeit=0,anzahl=0)
+  for (row in 1:(nrow(temp)-1)){
+    if(temp[row,]$status=="connected" && nrow(temp)>1){
+      temp2=filter(temp[row:nrow(temp),],status=="disconnected" & port==temp[row,]$port)
+      if (nrow(temp2)>0){
+        differenz=differenz+as.numeric(temp2[1,]$datetime-temp[row,]$datetime)
+        tt$klebezeit=tt$klebezeit+as.numeric(temp2[1,]$datetime-temp[row,]$datetime)
+        tt$anzahl=tt$anzahl+1
+        anzahl=anzahl+1
+      }
+    }
+  }
+  klebezeiten=rbind(klebezeiten,tt)
+  end_time <- Sys.time()
+  print(paste0(round(as.numeric(end_time - start_time,units="mins"),1),"Min abgelaufen / ",round((nrow(df)-rows)*(as.numeric(end_time - start_time,units="mins")/rows),1),"Min verbleibend"))
+}
+end_time <- Sys.time()
+print(paste0("Fertig nach ",round(as.numeric(end_time - start_time,units="mins"),1),"Min."))
+klebezeiten=klebezeiten[c(-1),]
+klebezeiten$klebezeit=round(klebezeiten$klebezeit)
+klebezeiten$durchschnitt=round(klebezeiten$klebezeit/klebezeiten$anzahl)
+klebezeiten=klebezeiten[order(-klebezeiten$klebezeit),]
+colnames(klebezeiten)=c("IP","Klebezeit (s)","Angriffe","Klebezeit/Angriff (s)")
+rownames(klebezeiten)=NULL
+con_time=round(differenz/anzahl)
+
+
+temp=ips
+temp$subnetz=NA
+for (ip in 1:nrow(temp)){
+  temp[ip,]$subnetz=paste0(unlist(str_split(temp[ip,]$IP,"[.]"))[1],".",unlist(str_split(temp[ip,]$IP,"[.]"))[2],".",unlist(str_split(temp[ip,]$IP,"[.]"))[3],".*")
+}
+ips_subnetze=temp
+subnetze=aggregate(temp$Angriffe, by=list(Category=temp$subnetz), FUN=sum)
+subnetze=subnetze[order(-subnetze$x),]
+subnetze$anteil=round(subnetze$x/sum(subnetze$x)*100,1)
+colnames(subnetze)=c("Subnetz","Angriffe","Anteil (%)")
+rownames(subnetze)=NULL
+```
+
+
+
+
+<br>
+<br>
+
+## 1. Übersicht
+<br>
+<font size="4">
+ Zeitraum: `r zeitraum` (`r round(days_difference)` Tage)
+
+ - insgesamt eingehende Verbindungen: <b>`r nrow(df%>%filter(status=="connected"))`</b>
+
+ - davon auch wieder getrennt: <b>`r nrow(df%>%filter(status=="disconnected"))`</b>
+
+ - einzigartige IPs: <b>`r length(unique(df$ip))`</b>
+ 
+ - bestätigt, dass Angreifer kleben geblieben ist: <b>`r as.character(as.numeric(anzahl))` Mal</b>
+
+ - dabei durchschnittliche Klebezeit: <b>`r con_time`s</b>
+
+ - insgesamt verschwendete Zeit der Angreifer: <b>`r as.character(round(as.numeric(round(differenz/3600)),1))`h </b>
+</font>
+<br>
+
+---
+
+<br>
+
+## 2. IP-Angriffe
+### 2.1. Top #10
+``` {r IPs Tabelle}
+
+ips_top10 %>%
+  kbl(caption="Top #10 IPs - nach Anzahl der Angriffe", row.names = NA) %>%
+  kable_styling(bootstrap_options = c("bordered","striped", "hover", "condensed", "responsive"),html_font = "Cambria")
+
+```
+
+``` {r IPs Barplot}
+
+
+plot=ggplot(data=ips_top10,aes(x= reorder(IP, -Angriffe), y=Angriffe)) +
+  #scale_x_datetime(date_breaks ="4 weeks", date_minor_breaks ="2 weeks", date_labels = "%m/%y")+
+  labs(title = "Welche IPs greifen an?",
+              subtitle = "Top #10",
+              caption = datenquelle,
+              x=NULL,y=NULL)  +
+  guides(fill=guide_legend(title=""))+
+  theme(legend.position = "none")+
+  theme(text = element_text(size=25*sizef)) +
+  theme(plot.title = element_text(size = 30*sizef, face = "bold"))+
+  geom_bar(position = "dodge", stat = "identity",fill="Steelblue") +
+  theme(  axis.line = element_blank(),
+          axis.ticks = element_blank(),
+          axis.text.x=element_blank())+
+  geom_text(aes(y= max(Angriffe/3), label=IP), size=8*sizef,position = position_dodge(width = 0.9),angle=90)
+print(plot)
+```
+
+### 2.2. Angriffe über die Zeit
+
+``` {r Angriffe über Zeit}
+
+test=df %>% count(datetime,sort=TRUE)
+if (days_difference<0.5){
+  test$month=round_date(test$datetime, "minute")
+  gerundet="Minute"
+}else if (days_difference<3){
+  test$month=round_date(test$datetime, "hour")
+  gerundet="Stunde"
+}else if (days_difference<120){
+  test$month=round_date(test$datetime, "day")
+  gerundet="Tag"
+}else {
+  test$month=round_date(test$datetime, "month")
+  gerundet="Monat"
+}
+
+test=aggregate(test$n, by=list(month=test$month), FUN=sum)
+colnames(test)=c("month","anzahl")
+  
+plot=ggplot(data=test,aes(x= month, y=anzahl)) +
+  labs(title = "Wie ist der zeitliche Verlauf der Angriffe?",
+              subtitle = paste("summiert pro",gerundet),
+              caption = datenquelle,
+              x=NULL,y=NULL)  +
+  guides(fill=guide_legend(title=""))+
+  theme(legend.position = "none")+
+  theme(text = element_text(size=25*sizef)) +
+  theme(plot.title = element_text(size = 30*sizef, face = "bold"))+
+  #geom_bar(position = "dodge", stat = "identity",fill="steelblue")+
+  geom_line(color="steelblue",size=2.5)+
+  geom_point(color="steelblue",shape=18,size=5*sizef)+
+  theme(  axis.line = element_blank(),
+          axis.ticks = element_blank() )
+  #scale_x_datetime(date_breaks ="1 hour", date_minor_breaks ="1 minute", date_labels = "%H:%M")
+print(plot)
+```
+
+``` {r Angriffe über Tagstunden}
+test=df
+test$hour= as.POSIXlt(test$datetime)$hour
+test=as.data.frame(table(test$hour))
+if (days_difference>1){
+  test$Freq=test$Freq/days_difference
+}
+
+colnames(test)=c("Uhrzeit","Angriffe")
+  
+plot=ggplot(data=test,aes(x= Uhrzeit, y=Angriffe)) +
+  labs(title = "Wann wird am Tag angegriffen?",
+              subtitle = paste0("Durchschnitt: ",round(mean(test$Angriffe)),"/h"),
+              caption = datenquelle,
+              x=NULL,y=NULL)  +
+  guides(fill=guide_legend(title=""))+
+  theme(legend.position = "none")+
+  theme(text = element_text(size=25*sizef)) +
+  theme(plot.title = element_text(size = 30*sizef, face = "bold"))+
+  geom_bar(position = "dodge", stat = "identity",fill="steelblue")+
+  theme(  axis.line = element_blank(),
+          axis.ticks = element_blank() )+
+   geom_hline(yintercept=mean(test$Angriffe), linetype="dashed",  alpha = 0.5,size = 1)
+print(plot)
+```
+
+``` {r angriffe nach Wochentag}
+test=df
+test=as.data.frame(table(weekdays(test$datetime)))
+if (days_difference>1){
+  test$Freq=test$Freq/(days_difference/7)
+}
+colnames(test)=c("Wochentag","Angriffe")
+test$Wochentag=factor(test$Wochentag,levels =  c("Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag")) 
+plot=ggplot(data=test,aes(x= Wochentag, y=Angriffe)) +
+  labs(title = "Wann wird in der Woche angegriffen?",
+              subtitle = paste0("Durchschnitt: ",round(mean(test$Angriffe)),"/Tag"),
+              caption = datenquelle,
+              x=NULL,y=NULL)  +
+  guides(fill=guide_legend(title=""))+
+  theme(legend.position = "none")+
+  theme(text = element_text(size=25*sizef)) +
+  theme(plot.title = element_text(size = 30*sizef, face = "bold"))+
+  geom_bar(position = "dodge", stat = "identity",fill="steelblue")+
+  theme(  axis.line = element_blank(),
+          axis.ticks = element_blank() )+
+   geom_hline(yintercept=mean(test$Angriffe), linetype="dashed",  alpha = 0.5,size = 1)
+print(plot)
+```
+
+### 2.3. Klebezeiten 
+``` {r IPs Tabelle Klebezeiten}
+
+klebezeiten[c(1:10),] %>%
+  kbl(caption="Top #10 IPs - nach Klebezeit", row.names = NA) %>%
+  kable_styling(bootstrap_options = c("bordered","striped", "hover", "condensed", "responsive"),html_font = "Cambria") %>%
+  add_footnote(c("Angriff wird nur gezählt, wenn 'connect' und zuordenbar 'disconnected' aufgezeichnet wurden"), notation = "symbol")
+
+```
+<br>
+
+---
+
+<br>
+
+## 3. Subnetze
+### 3.1. Top #10
+
+```{r gruppieren nach subnetz gruppe}
+
+
+subnetze[c(1:10),] %>%
+  kbl(caption="Top #10 Subnetze - nach Anzahl der Angriffe", row.names = NA) %>%
+  kable_styling(bootstrap_options = c("bordered","striped", "hover", "condensed", "responsive"),html_font = "Cambria")
+
+
+```
+
+
+
+``` {r Subnetze Barplot}
+
+
+plot=ggplot(data=subnetze[1:10,],aes(x= reorder(Subnetz, -Angriffe), y=Angriffe)) +
+  #scale_x_datetime(date_breaks ="4 weeks", date_minor_breaks ="2 weeks", date_labels = "%m/%y")+
+  labs(title = "Welche Subnetze existieren?",
+              subtitle = "Top #10",
+              caption = datenquelle,
+              x=NULL,y=NULL)  +
+  guides(fill=guide_legend(title=""))+
+  theme(legend.position = "none")+
+  theme(text = element_text(size=25*sizef)) +
+  theme(plot.title = element_text(size = 30*sizef, face = "bold"))+
+  geom_bar(position = "dodge", stat = "identity",fill="steelblue") +
+  theme(  axis.line = element_blank(),
+          axis.ticks = element_blank(),
+          axis.text.x=element_blank())+
+  geom_text(aes(y= max(Angriffe/3), label=Subnetz), size=8*sizef,position = position_dodge(width = 0.9),angle=90)
+print(plot)
+```
+
+### 3.2. Netzwerk-Diagramm
+
+``` {r plot network diagram subnetz and ips,warning=FALSE}
+temp=filter(ips_subnetze,subnetz %in% subnetze[1:10,1]) #Top 10 Subnetze
+data <- data_frame(
+  from=c(temp$subnetz,as.character(temp$IP)),
+  to=c(rep("SSH-Tarpit",nrow(temp)),temp$subnetz)
+)
+simpleNetwork(data, height="200px", width="100px", Source = 1,                 # column number of source
+        Target = 2,                 # column number of target
+        linkDistance = 50,          # distance between node. Increase this value to have more space between nodes
+        charge = -400,                # numeric value indicating either the strength of the node repulsion (negative value) or attraction (positive value)
+        fontSize = 14,               # size of the node names
+        fontFamily = "serif",       # font og node names
+        linkColour = "#666",        # colour of edges, MUST be a common colour for the whole graph
+        nodeColour = "steelblue",     # colour of nodes, MUST be a common colour for the whole graph
+        opacity = 0.9,              # opacity of nodes. 0=transparent. 1=no transparency
+        zoom = T                    # Can you zoom on the figure?
+        )
+
+```
+<br>
+
+---
+
+<br>
+
+## 4. Ip-Locations der Top #100 Angreifer
+### 4.1. nach Land
+
+``` {r nach land}
+
+test=aggregate(ips_top100$Angriffe, by=list(Category=ips_top100$Land), FUN=sum)
+colnames(test)=c("Land","Angriffe")
+plot=ggplot(data=test,aes(x= reorder(Land, -Angriffe), y=Angriffe)) +
+  labs(title = "Woher kommen die Angriffe?",
+              subtitle = paste0("Median: ",round(median(test$Angriffe)),"/Land"),
+              caption = datenquelle,
+              x=NULL,y=NULL)  +
+  guides(fill=guide_legend(title=""))+
+  theme(legend.position = "none")+
+  theme(text = element_text(size=25*sizef)) +
+  theme(plot.title = element_text(size = 30*sizef, face = "bold"))+
+  geom_bar(position = "dodge", stat = "identity",fill="steelblue")+
+  geom_hline(yintercept=median(test$Angriffe), linetype="dashed",  alpha = 0.5,size = 1)+
+    theme(  axis.line = element_blank(),
+          axis.ticks = element_blank(),
+          axis.text.x=element_blank())+
+  geom_text(aes(y= max(Angriffe/3), label=Land), size=8*sizef,position = position_dodge(width = 0.9),angle=60)+
+  geom_text(aes(label=Angriffe), size=8*sizef,position = position_dodge(width = 0.9),vjust=-0.25)
+print(plot)
+```
+
+### 4.2. Weltkarte
+
+```{r display weltkarte, fig.align="center"}
+
+world_spdf <- readOGR( 
+  dsn="TM_WORLD_BORDERS_SIMPL-0.3.shp" , 
+  layer="TM_WORLD_BORDERS_SIMPL-0.3",
+  verbose=FALSE
+)
+
+temp=ips_top100
+temp=aggregate(temp$Angriffe, by=list(Category=temp$Land), FUN=sum)
+temp$anteil=round(temp$x/sum(temp$x)*100,2)
+colnames(temp)=c("NAME","Angriffe","Anteil (%)")
+
+world_my=world_spdf
+world_my@data$POP2005=temp$Angriffe[match(world_my@data$NAME,temp$NAME)]
+world_my@data$AREA=temp$`Anteil (%)`[match(world_my@data$NAME,temp$NAME)]
+
+pretty=pretty(min(temp$Angriffe):max(temp$Angriffe),n=6)
+mybins <- c(pretty[1:length(pretty)-1],Inf)
+mypalette <- colorBin( palette="YlOrBr", domain=world_my@data$POP2005, na.color="transparent", bins=mybins)
+mytext <- paste(
+    "Land: ", world_my@data$NAME,"<br/>", 
+    "Angriffe: ", round(world_my@data$POP2005, 2), "<br/>",
+    "Anteil: ", world_my@data$AREA, "%", 
+    sep="") %>%
+  lapply(htmltools::HTML)
+
+leaflet(world_my) %>% 
+  addTiles()  %>% 
+  setView( lat=10, lng=0 , zoom=2) %>%
+  addPolygons( 
+    fillColor = ~mypalette(POP2005), 
+    stroke=TRUE, 
+    fillOpacity = 0.9, 
+    color="white", 
+    weight=0.3,
+    label = mytext,
+    labelOptions = labelOptions( 
+      style = list("font-weight" = "normal", padding = "3px 8px"), 
+      textsize = "13px", 
+      direction = "auto"
+    )
+  ) %>%
+  addLegend( pal=mypalette, values=~POP2005, opacity=0.9, title = "Angriffe", position = "bottomleft" )
+
+
+```
+
+
+
+
+Credits: [github.com/biejay](https://github.com/biejay/SSH-Tarpit-R-Analyse/)
+
