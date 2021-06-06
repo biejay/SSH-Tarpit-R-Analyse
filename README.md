@@ -6,9 +6,23 @@
 * IP-Geolocate: Woher kommen die Angreifer?
 * Wie lange bleiben die Angreifer in deiner Tarpit kleben?
 * Aus welchen Subnetzen stammen die Angreifer?
-* Netzwerk-Diagramm von Subnetzen und IPs
-* Weltkarte mit Angreifern
+* interaktives Netzwerk-Diagramm von Subnetzen und IPs
+* interaktive Weltkarte mit Angreifern
 * Wann wirst du angegriffen?
 
 ### Beispiele:
-![Image of TopTen](https://github.com/biejay/SSH-Tarpit-R-Analyse/main/R/topten.jpg)
+<img src="https://user-images.githubusercontent.com/8942784/120938542-871c0a80-c713-11eb-8f6f-bb7eb06cfa15.JPG" width="800" height="400" alt="topten">
+<img src="https://user-images.githubusercontent.com/8942784/120938551-8edbaf00-c713-11eb-8e8a-e0b21c6bea65.JPG" width="800" height="400" alt="klebezeiten">
+<img src="https://user-images.githubusercontent.com/8942784/120938552-900cdc00-c713-11eb-9d60-867248b15c6e.JPG" width="700" height="600" alt="netzwerk-diagramm">
+<img src="https://user-images.githubusercontent.com/8942784/120938571-a4e96f80-c713-11eb-8ccc-21799de33972.JPG" width="800" height="600" alt="Weltkarte">
+
+
+### How-To:
+* die tarpit-logs (*tarpit.txt*) werden als CSV benötigt! Dafür am besten mit diesem Python-Skript die .txt Datei umwandeln: [github/tarpit_log_to_csv](https://github.com/biejay/tarpit_log_to_csv)
+* R-Studio installieren
+* *tarpit_auswertung.rmd*-File runterladen und in selbes Verzeichnes wie tarpit.csv legen
+* Weltkarte runterladen und entpacken: http://thematicmapping.org/downloads/TM_WORLD_BORDERS_SIMPL-0.3.zip 
+    * *TM_WORLD_BORDERS_SIMPL-0.3.shp* muss im selben Verzeichnis liegen wie das .rmd und das .csv File! 
+* *tarpit_auswertung.rmd* mit Rstudio öffnen 
+* das Laden zusätzlicher Pakete wird nötig sein, wenn diese noch nicht installiert sind. Einfach: `install.packages("HIER_PAKETNAME")`
+* ein HTML-Markdown erzeugen - Fertig
