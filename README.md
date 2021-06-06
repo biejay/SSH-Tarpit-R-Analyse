@@ -24,5 +24,6 @@
 * Weltkarte runterladen und entpacken: http://thematicmapping.org/downloads/TM_WORLD_BORDERS_SIMPL-0.3.zip 
     * *TM_WORLD_BORDERS_SIMPL-0.3.shp* und die anderen Dateien müssen im selben Verzeichnis liegen wie das .rmd und das .csv File! 
 * *tarpit_auswertung.rmd* mit Rstudio öffnen 
+* *Session* -> *Set Working Directory* -> *To Source File Location*
 * das Laden zusätzlicher Pakete ist nötig, wenn diese noch nicht installiert sind. Einfach: `install.packages("HIER_PAKETNAME")`
 * ein HTML-Markdown erzeugen - Fertig
