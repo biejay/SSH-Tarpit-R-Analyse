@@ -20,7 +20,7 @@
 ### How-To:
 * die tarpit-logs (*tarpit.txt*) werden als CSV benötigt! Dafür am besten mit diesem Python-Skript die .txt Datei in eine .csv umwandeln: [github/tarpit_log_to_csv](https://github.com/biejay/tarpit_log_to_csv)
 * [R-Studio](https://www.rstudio.com/products/rstudio/) installieren
-* *tarpit_auswertung.rmd* runterladen und in selbes Verzeichnes wie *tarpit.csv* legen
+* [tarpit_auswertung.rmd](https://raw.githubusercontent.com/biejay/SSH-Tarpit-R-Analyse/main/tarpit_auswertung.Rmd) runterladen und in selbes Verzeichnes wie *tarpit.csv* legen
 * Weltkarte runterladen und entpacken: http://thematicmapping.org/downloads/TM_WORLD_BORDERS_SIMPL-0.3.zip 
     * *TM_WORLD_BORDERS_SIMPL-0.3.shp* muss im selben Verzeichnis liegen wie das .rmd und das .csv File! 
     * die restlichen Dateien aus dem Download können gelöscht werden
