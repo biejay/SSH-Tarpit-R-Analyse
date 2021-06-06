@@ -1,5 +1,5 @@
 # SSH-Tarpit-R-Analyse
-## Analyse der SSH-Tarpit Logs via R
+## Analyse der [SSH-Tarpit Logs](https://pypi.org/project/ssh-tarpit/) via R
 
 ### Features:
 * Wer sind die Top #10 Angreifer
@@ -18,11 +18,12 @@
 
 
 ### How-To:
-* die tarpit-logs (*tarpit.txt*) werden als CSV benötigt! Dafür am besten mit diesem Python-Skript die .txt Datei umwandeln: [github/tarpit_log_to_csv](https://github.com/biejay/tarpit_log_to_csv)
-* R-Studio installieren
-* *tarpit_auswertung.rmd*-File runterladen und in selbes Verzeichnes wie tarpit.csv legen
+* die tarpit-logs (*tarpit.txt*) werden als CSV benötigt! Dafür am besten mit diesem Python-Skript die .txt Datei in eine .csv umwandeln: [github/tarpit_log_to_csv](https://github.com/biejay/tarpit_log_to_csv)
+* [R-Studio](https://www.rstudio.com/products/rstudio/) installieren
+* *tarpit_auswertung.rmd* runterladen und in selbes Verzeichnes wie *tarpit.csv* legen
 * Weltkarte runterladen und entpacken: http://thematicmapping.org/downloads/TM_WORLD_BORDERS_SIMPL-0.3.zip 
     * *TM_WORLD_BORDERS_SIMPL-0.3.shp* muss im selben Verzeichnis liegen wie das .rmd und das .csv File! 
+    * die restlichen Dateien aus dem Download können gelöscht werden
 * *tarpit_auswertung.rmd* mit Rstudio öffnen 
-* das Laden zusätzlicher Pakete wird nötig sein, wenn diese noch nicht installiert sind. Einfach: `install.packages("HIER_PAKETNAME")`
+* das Laden zusätzlicher Pakete ist nötig, wenn diese noch nicht installiert sind. Einfach: `install.packages("HIER_PAKETNAME")`
 * ein HTML-Markdown erzeugen - Fertig
