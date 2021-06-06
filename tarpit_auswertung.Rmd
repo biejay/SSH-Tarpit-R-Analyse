@@ -21,8 +21,6 @@ output:
 
 
 ```{r setup, include=FALSE}
-#download.file("http://thematicmapping.org/downloads/TM_WORLD_BORDERS_SIMPL-0.3.zip" , destfile="world_shape_file.zip")
-#unzip("world_shape_file.zip")
 knitr::opts_chunk$set(echo = TRUE)
 
 sizef=1 #1=16 width x 10.666 height fig
@@ -48,11 +46,7 @@ gpclibPermit()
 library(broom)
 library(leaflet)
 
-
 df=read.csv2("tarpit.csv")
-df=df[!grepl("192.168.0.",df$ip),]
-#df=read.csv("tarpit_semper.csv")
-
 
 df$X=NULL
 df$datetime=as.POSIXct(df$datetime)
@@ -83,7 +77,6 @@ ips_top100$region=temp$region_name
 ips_top100$country=temp$country_name
 colnames(ips_top100)=c("IP","Angriffe","Anteil (%)","Organisation","Stadt","Region","Land")
 ips_top10=ips_top100[c(1:10),]
-
 
 differenz=0
 anzahl=0
