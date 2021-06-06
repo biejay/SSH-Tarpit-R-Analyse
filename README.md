@@ -28,3 +28,5 @@
 * *Session* -> *Set Working Directory* -> *To Source File Location*
 * das Laden zusätzlicher Pakete ist nötig, wenn diese noch nicht installiert sind. Einfach: `install.packages("HIER_PAKETNAME")`
 * ein HTML-Markdown erzeugen - Fertig
+
+Keine Gewähr für die Richtigkeit der Berechnungen!
