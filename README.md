@@ -22,8 +22,7 @@
 * [R-Studio](https://www.rstudio.com/products/rstudio/) installieren
 * [tarpit_auswertung.rmd](https://raw.githubusercontent.com/biejay/SSH-Tarpit-R-Analyse/main/tarpit_auswertung.Rmd) runterladen und in selbes Verzeichnes wie *tarpit.csv* legen
 * Weltkarte runterladen und entpacken: http://thematicmapping.org/downloads/TM_WORLD_BORDERS_SIMPL-0.3.zip 
-    * *TM_WORLD_BORDERS_SIMPL-0.3.shp* muss im selben Verzeichnis liegen wie das .rmd und das .csv File! 
-    * die restlichen Dateien aus dem Download können gelöscht werden
+    * *TM_WORLD_BORDERS_SIMPL-0.3.shp* und die anderen Dateien müssen im selben Verzeichnis liegen wie das .rmd und das .csv File! 
 * *tarpit_auswertung.rmd* mit Rstudio öffnen 
 * das Laden zusätzlicher Pakete ist nötig, wenn diese noch nicht installiert sind. Einfach: `install.packages("HIER_PAKETNAME")`
 * ein HTML-Markdown erzeugen - Fertig
