@@ -433,8 +433,8 @@ leaflet(world_my) %>%
 
 ```
 
+<br> 
+<br>
 
-
-
-Credits: [github.com/biejay](https://github.com/biejay/SSH-Tarpit-R-Analyse/)
+Credits: <a href="https://github.com/biejay/SSH-Tarpit-R-Analyse/">github.com/biejay/SSH-Tarpit-R-Analyse</a>
 
